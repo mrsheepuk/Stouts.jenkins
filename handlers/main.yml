@@ -3,7 +3,15 @@
 - name: jenkins restart
   service: name=jenkins state=restarted
   sudo: yes
-  
+  notify: jenkins wait for CLI
+
+- name: jenkins wait for CLI
+  shell: curl --head --silent http://{{ jenkins_http_host }}:{{ jenkins_http_port }}{{ jenkins_prefix }}/cli/
+  delay: 5
+  retries: 12
+  register: result
+  until: result.stdout.find("200 OK") != -1
+
 - name: jenkins update jobs
   command: "{{jenkins_home}}/jobs/job.sh {{item.item.name}}"
   sudo_user: "{{ jenkins_user }}"
@@ -17,8 +25,7 @@
 - name: nginx reload
   service: name=nginx state=reloaded
   sudo: yes
-  
+
 - name: apache restart
   service: name=apache2 state=restarted
   sudo: yes
-  
